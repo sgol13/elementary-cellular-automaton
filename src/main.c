@@ -1,6 +1,7 @@
 // Elementary Cellular Automaton
 // Szymon Golebiowski
 
+#include "argparse.h" // https://github.com/Cofyc/argparse
 #include <allegro5/allegro5.h>
 #include <allegro5/allegro_font.h>
 #include <allegro5/allegro_primitives.h>
@@ -15,6 +16,7 @@
 #define DEFAULT_COLUMNS_NUM 80
 #define ITERATION_TIME 0.01
 
+// display the given iteration row
 void display_population(int **population, int iteration, int columns_num) {
 
     ALLEGRO_COLOR cell_color = al_map_rgb(138, 43, 226);
@@ -38,6 +40,7 @@ void display_population(int **population, int iteration, int columns_num) {
     }
 }
 
+// visualize the simulation step by step
 void visualize_simulation(int **population, int iterations_num, int rule,
                           int population_size, int columns_num) {
 
@@ -134,6 +137,7 @@ void visualize_simulation(int **population, int iterations_num, int rule,
     al_destroy_event_queue(events_queue);
 }
 
+// create a random initial population of the given size
 int **create_population(int iterations_num, int population_size, int columns_num) {
 
     int **population = (int **)malloc(iterations_num * sizeof(int *));
@@ -159,7 +163,7 @@ int **create_population(int iterations_num, int population_size, int columns_num
     return population;
 }
 
-
+// free memory allocated for a population
 void delete_population(int **population, int iterations_num) {
 
     for (int i = 0; i < iterations_num; i++) {
@@ -169,7 +173,7 @@ void delete_population(int **population, int iterations_num) {
     free(population);
 }
 
-
+// calculate the state of the given cell on the basis of its upper neighbours
 int calculate_cell(int upper_left, int upper_middle, int upper_right, int rule) {
 
     int upper_cells_type = 4 * upper_left + 2 * upper_middle + upper_right;
@@ -181,6 +185,7 @@ int calculate_cell(int upper_left, int upper_middle, int upper_right, int rule) 
     return 0;
 }
 
+// calculate the next iteration
 void calculate_iteration(int **population, int iteration, int rule, int columns_num) {
 
     int upper_left, upper_middle, upper_right;
@@ -203,6 +208,7 @@ void calculate_iteration(int **population, int iteration, int rule, int columns_
     }
 }
 
+// conduct a simulation with given parameters
 void run_simulation(int rule, int population_size, int iterations_num,
                     int columns_num) {
 
@@ -220,24 +226,81 @@ void run_simulation(int rule, int population_size, int iterations_num,
     delete_population(population, iterations_num);
 }
 
+// generate random number in a given range (inclusively)
 int random_number(int min, int max) { return (rand() % (max - min + 1)) + min; }
 
-int main() {
+int main(int argc, const char **argv) {
 
     srand(time(NULL));
-
-    int population_size = 10;
-    int rule = 122;
 
     int columns_num = DEFAULT_COLUMNS_NUM;
     int iterations_num = DEFAULT_ITERATIONS_NUM;
 
-    // run_simulation(rule, population_size, iterations_num, columns_num);
+    // PARSE OPTIONAL ARGUMENTS
+    struct argparse_option options[] = {
+        OPT_HELP(),
+        OPT_GROUP(
+            "positional arguments:\n    RULE                      transition rule, "
+            "[0, 255]\n    POPULATION                size of an initial "
+            "population, [0, columns]"),
+        OPT_GROUP("optional arguments:"),
+        OPT_INTEGER('i', "iterations", &iterations_num,
+                    "number of simulation iterations, [10, 80]", NULL, 0, 0),
+        OPT_INTEGER('c', "columns", &columns_num, "number of columns, [30, 150]",
+                    NULL, 0, 0),
+        OPT_END(),
+    };
 
-    printf("population size: %d\n", population_size);
-    printf("rule: %d\n", rule);
-    printf("iterations_num: %d\n", iterations_num);
-    printf("columns_num: %d\n", columns_num);
+    static const char *const usages[] = {
+        "./cellular_automaton RULE POPULATION [options]",
+        NULL,
+    };
+    struct argparse argparse;
+    argparse_init(&argparse, options, usages, 0);
+    argparse_describe(
+        &argparse, "\nVisual simulation of an elementary cellular automaton.", NULL);
+    argc = argparse_parse(&argparse, argc, argv);
+
+    if (argc != 2) {
+
+        fprintf(stderr,
+                "RULE and POPULATION parameters cannot be ommited. Use -h to see the "
+                "manual.\n");
+
+        return 1;
+    }
+
+    // PARSE POSITIONAL ARGUMENTS
+    int rule = atoi(argv[0]);
+    int population_size = atoi(argv[1]);
+
+    // CHECK ARGUMENTS CORRECTNESS
+    int error = 0;
+    if (!(0 <= population_size && population_size <= columns_num)) {
+        fprintf(stderr, "Incorrect population size: %d\n", population_size);
+        error = 1;
+    }
+
+    if (!(0 <= rule && rule <= 255)) {
+        fprintf(stderr, "Incorrect transition rule: %d\n", rule);
+        error = 1;
+    }
+
+    if (!(30 <= columns_num && columns_num <= 150)) {
+        fprintf(stderr, "Incorrect number of columns: %d\n", columns_num);
+        error = 1;
+    }
+
+    if (!(10 <= iterations_num && iterations_num <= 80)) {
+        fprintf(stderr, "Incorrect number of iterations: %d\n", iterations_num);
+        error = 1;
+    }
+
+    if (error) {
+        return 2;
+    }
+
+    run_simulation(rule, population_size, iterations_num, columns_num);
 
     return 0;
 }
