@@ -98,7 +98,7 @@ void visualize_simulation(int **population, int iterations_num, int rule,
                 iteration++;
             }
 
-            sprintf(text, "ITERATION NUM: %d / %d", iteration, iterations_num);
+            sprintf(text, "ITERATION: %d / %d", iteration, iterations_num);
             int x1 = CELL_WIDTH * columns_num + 15, y1 = 20;
             al_draw_text(font, al_map_rgb(255, 255, 255), x1, y1, 0, text);
 
@@ -238,16 +238,17 @@ int main(int argc, const char **argv) {
 
     // PARSE OPTIONAL ARGUMENTS
     struct argparse_option options[] = {
-        OPT_HELP(),
         OPT_GROUP(
             "positional arguments:\n    RULE                      transition rule, "
             "[0, 255]\n    POPULATION                size of an initial "
             "population, [0, columns]"),
         OPT_GROUP("optional arguments:"),
         OPT_INTEGER('i', "iterations", &iterations_num,
-                    "number of simulation iterations, [10, 80]", NULL, 0, 0),
-        OPT_INTEGER('c', "columns", &columns_num, "number of columns, [30, 150]",
-                    NULL, 0, 0),
+                    "number of simulation iterations, [10, 80], default 50", NULL, 0,
+                    0),
+        OPT_INTEGER('c', "columns", &columns_num,
+                    "number of columns, [30, 150], default 80", NULL, 0, 0),
+        OPT_HELP(),
         OPT_END(),
     };
 
