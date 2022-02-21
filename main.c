@@ -9,13 +9,13 @@
 #include <time.h>
 
 // CONFIGURATION
-#define COLUMNS_NUM 10
 #define CELL_HEIGHT 10
 #define CELL_WIDTH 10
 #define DEFAULT_ITERATIONS_NUM 50
-#define ITERATION_TIME 0.1
+#define DEFAULT_COLUMNS_NUM 80
+#define ITERATION_TIME 0.01
 
-void display_population(int **population, int iteration) {
+void display_population(int **population, int iteration, int columns_num) {
 
     ALLEGRO_COLOR cell_color = al_map_rgb(138, 43, 226);
 
@@ -25,7 +25,7 @@ void display_population(int **population, int iteration) {
         int y1 = i * CELL_HEIGHT;
         int y2 = y1 + CELL_HEIGHT;
 
-        for (int j = 0; j < COLUMNS_NUM; j++) {
+        for (int j = 0; j < columns_num; j++) {
 
             // set horizontal coordinates
             int x1 = j * CELL_WIDTH;
@@ -39,7 +39,7 @@ void display_population(int **population, int iteration) {
 }
 
 void visualize_simulation(int **population, int iterations_num, int rule,
-                          int rozmiar_populacji) {
+                          int population_size, int columns_num) {
 
     al_init();                  // initialize Allegro library
     al_install_keyboard();      // initialize keyboard handling
@@ -51,7 +51,7 @@ void visualize_simulation(int **population, int iterations_num, int rule,
     ALLEGRO_EVENT_QUEUE *events_queue = al_create_event_queue();
 
     // create a new window
-    const int window_width = CELL_WIDTH * COLUMNS_NUM + 200;
+    const int window_width = CELL_WIDTH * columns_num + 200;
     const int window_height = CELL_HEIGHT * iterations_num + 50;
 
     ALLEGRO_DISPLAY *disp = al_create_display(window_width, window_height);
@@ -71,7 +71,7 @@ void visualize_simulation(int **population, int iterations_num, int rule,
     al_start_timer(timer);
 
     double time, previous_time = al_get_time();
-    int iteration = 0; // nr aktualnej iteracji
+    int iteration = 0;
     char text[100];
 
     while (1) {
@@ -96,7 +96,7 @@ void visualize_simulation(int **population, int iterations_num, int rule,
             }
 
             sprintf(text, "ITERATION NUM: %d / %d", iteration, iterations_num);
-            int x1 = CELL_WIDTH * COLUMNS_NUM + 15, y1 = 20;
+            int x1 = CELL_WIDTH * columns_num + 15, y1 = 20;
             al_draw_text(font, al_map_rgb(255, 255, 255), x1, y1, 0, text);
 
             y1 += 20;
@@ -104,22 +104,23 @@ void visualize_simulation(int **population, int iterations_num, int rule,
             al_draw_text(font, al_map_rgb(255, 255, 255), x1, y1, 0, text);
 
             y1 += 20;
-            sprintf(text, "POPULATION SIZE: %d", rozmiar_populacji);
+            sprintf(text, "POPULATION SIZE: %d", population_size);
             al_draw_text(font, al_map_rgb(255, 255, 255), x1, y1, 0, text);
 
             y1 += 20;
-            sprintf(text, "COLUMNS NUMBER: %d", COLUMNS_NUM);
+            sprintf(text, "COLUMNS NUMBER: %d", columns_num);
             al_draw_text(font, al_map_rgb(255, 255, 255), x1, y1, 0, text);
 
             if (iteration == iterations_num) {
 
                 x1 = 40;
                 y1 = CELL_HEIGHT * iterations_num + 20;
-                sprintf(text, "SIMULATION FINISHED. PRESS ENTER TO CLOSE THE WINDOW");
+                sprintf(text,
+                        "SIMULATION FINISHED. PRESS ANY KEY TO CLOSE THE WINDOW");
                 al_draw_text(font, al_map_rgb(255, 255, 255), x1, y1, 0, text);
             }
 
-            display_population(population, iteration);
+            display_population(population, iteration, columns_num);
 
             al_flip_display();
             refresh = 0;
@@ -133,15 +134,14 @@ void visualize_simulation(int **population, int iterations_num, int rule,
     al_destroy_event_queue(events_queue);
 }
 
-
-int **create_population(int iterations_num, int population_size) {
+int **create_population(int iterations_num, int population_size, int columns_num) {
 
     int **population = (int **)malloc(iterations_num * sizeof(int *));
     for (int i = 0; i < iterations_num; i++) {
 
-        population[i] = (int *)malloc(COLUMNS_NUM * sizeof(int));
+        population[i] = (int *)malloc(columns_num * sizeof(int));
 
-        for (int j = 0; j < COLUMNS_NUM; j++) {
+        for (int j = 0; j < columns_num; j++) {
             population[i][j] = 0;
         }
     }
@@ -150,7 +150,7 @@ int **create_population(int iterations_num, int population_size) {
     for (int i = 0; i < population_size; i++) {
 
         do {
-            cell = rand() % COLUMNS_NUM;
+            cell = rand() % columns_num;
         } while (population[0][cell] == 1);
 
         population[0][cell] = 1;
@@ -181,18 +181,17 @@ int calculate_cell(int upper_left, int upper_middle, int upper_right, int rule) 
     return 0;
 }
 
-
-void calculate_iteration(int **population, int iteration, int rule) {
+void calculate_iteration(int **population, int iteration, int rule, int columns_num) {
 
     int upper_left, upper_middle, upper_right;
     int upper_left_num, upper_middle_num, upper_right_num;
     int current_cell;
 
-    for (int cell_num = 0; cell_num < COLUMNS_NUM; cell_num++) {
+    for (int cell_num = 0; cell_num < columns_num; cell_num++) {
 
-        upper_left_num = (cell_num - 1 + COLUMNS_NUM) % COLUMNS_NUM;
+        upper_left_num = (cell_num - 1 + columns_num) % columns_num;
         upper_middle_num = cell_num;
-        upper_right_num = (cell_num + 1) % COLUMNS_NUM;
+        upper_right_num = (cell_num + 1) % columns_num;
 
         upper_left = population[iteration - 1][upper_left_num];
         upper_middle = population[iteration - 1][upper_middle_num];
@@ -204,29 +203,41 @@ void calculate_iteration(int **population, int iteration, int rule) {
     }
 }
 
+void run_simulation(int rule, int population_size, int iterations_num,
+                    int columns_num) {
 
-void run_simulation(int iterations_num, int population_size, int rule) {
-
-    int **population = create_population(iterations_num, population_size);
+    int **population =
+        create_population(iterations_num, population_size, columns_num);
 
     for (int iteration = 1; iteration < iterations_num; iteration++) {
 
-        calculate_iteration(population, iteration, rule);
+        calculate_iteration(population, iteration, rule, columns_num);
     }
 
-    visualize_simulation(population, iterations_num, rule, population_size);
+    visualize_simulation(population, iterations_num, rule, population_size,
+                         columns_num);
 
     delete_population(population, iterations_num);
 }
 
 int random_number(int min, int max) { return (rand() % (max - min + 1)) + min; }
 
-
 int main() {
 
     srand(time(NULL));
 
-    run_simulation(10, 5, 19);
+    int population_size = 10;
+    int rule = 122;
+
+    int columns_num = DEFAULT_COLUMNS_NUM;
+    int iterations_num = DEFAULT_ITERATIONS_NUM;
+
+    // run_simulation(rule, population_size, iterations_num, columns_num);
+
+    printf("population size: %d\n", population_size);
+    printf("rule: %d\n", rule);
+    printf("iterations_num: %d\n", iterations_num);
+    printf("columns_num: %d\n", columns_num);
 
     return 0;
 }
