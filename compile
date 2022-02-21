@@ -1,0 +1,1 @@
+gcc -o exe main.c $(pkg-config allegro-5 allegro_font-5 --libs --cflags) -lallegro_primitives && ./exe
