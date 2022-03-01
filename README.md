@@ -3,8 +3,17 @@ This project is an implementation of an [elementary cellular automaton](https://
 
 <img src="https://i.postimg.cc/CM6LTXPp/example.png" width="1000">
 
+## Requirements
+* CMake
+* Make
+* Allegro ([download](https://liballeg.org/download.html))
+
 ## Compilation
-If you want to compile the program, you need to have Allegro library installed. You can download it [here](https://liballeg.org/download.html). 
+First, clone the repository:
+```
+git clone https://github.com/sgol13/elementary-cellular-automaton.git
+cd elementary-cellular-automaton
+```
 Then you can build the program using a prepared bash script. Just type:
 ```
 ./build
